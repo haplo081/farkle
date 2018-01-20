@@ -1,5 +1,17 @@
 import random
 
+
+class FarkleError(Exception):
+    pass
+
+
+class EmptyHandError(FarkleError):
+    pass
+
+class InvalidDieFace(FarkleError):
+    pass
+
+
 class SixSidedDie(object):
     def __init__(self, value=None) -> None:
         self._value = None
@@ -18,15 +30,44 @@ class SixSidedDie(object):
 
     def set(self, value):
         if value < 1 or value > 6:
-            raise Exception("Invalid die value")
+            raise InvalidDieFace("Invalid die value")
         else:
             self._value = value
 
     def get(self):
         return self._value
 
+    def __eq__(self, other):
+        if isinstance(other, SixSidedDie):
+            other = other.value
+        return self.value == other
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __gt__(self, other):
+        if isinstance(other, SixSidedDie):
+            other = other.value
+        return self.value > other
+
+    def __ge__(self, other):
+        if isinstance(other, SixSidedDie):
+            other = other.value
+        return self.value >= other
+
+    def __lt__(self, other):
+        if isinstance(other, SixSidedDie):
+            other = other.value
+        return self.value < other
+
+    def __le__(self, other):
+        if isinstance(other, SixSidedDie):
+            other = other.value
+        return self.value <= other
+
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, self._value)
+
 
 class FarkleHand(object):
 
@@ -69,19 +110,42 @@ class FarkleHand(object):
     def _new_hand(self):
         return [SixSidedDie() for i in range(6)]
 
-    def get_scored_values(self):
-        return [d.value for d in self._scored_dice]
+    def get_scored_dice(self):
+        return list(self._scored_dice)
 
-    def get_current_values(self):
-        return [d.value for d in self._current_dice]
+    def get_current_dice(self):
+        return list(self._current_dice)
 
     def roll(self):
         for d in self._current_dice:
             d.roll()
 
+    def score(self, dice):
+        scored_dice = list()
+        scored_dice_i = list()
+        for die in dice:
+            if isinstance(die, int):
+                scored_die = self._current_dice[die]
+                scored_dice_i.append(die)
+            else:
+                index = self._current_dice.index(die)
+                scored_die = self._current_dice[index]
+                scored_dice_i.append(index)
+            scored_dice.append(scored_die)
+        self._scored_dice.append(tuple(scored_dice))
+        self._current_dice = [d
+                              for i, d
+                              in enumerate(self._current_dice)
+                              if i not in scored_dice_i]
+
+
 if __name__ == '__main__':
     f = FarkleHand()
 
-    print (sorted(f.get_current_values()))
+    print (f.get_current_dice())
     f.roll()
-    print (sorted(f.get_current_values()))
+    print (f.get_current_dice())
+    f.score([0, 1, 2])
+
+    print (f.get_scored_dice())
+    print (f.get_current_dice())
